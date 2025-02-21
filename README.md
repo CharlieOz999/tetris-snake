@@ -2,6 +2,33 @@
 
 A unique fusion of classic Snake and Tetris gameplay mechanics. Navigate your snake to eat falling Tetris blocks while avoiding collisions with walls, stone blocks, and your own tail.
 
+## Quick Start Guide
+
+1. Download the game:
+   - Click the green "Code" button above
+   - Choose "Download ZIP"
+   - Extract the ZIP file
+
+2. Install Python:
+   - Download from [python.org](https://www.python.org/downloads/)
+   - During installation, check "Add Python to PATH"
+
+3. Install Pygame:
+   - Open Terminal/Command Prompt
+   - Run: `pip install pygame`
+
+4. Play the game:
+   - Double-click `tetris_snake.py` OR
+   - Run `python tetris_snake.py` in Terminal
+
+## How to Play
+
+- Use arrow keys to move the snake
+- Eat the falling colored blocks before they turn gray
+- Watch for red warning indicators showing where blocks will fall
+- Don't hit the walls, stone blocks, or your own tail
+- Press spacebar to restart after game over
+
 ## Features
 
 - Classic Snake movement with arrow key controls
@@ -10,44 +37,12 @@ A unique fusion of classic Snake and Tetris gameplay mechanics. Navigate your sn
 - Warning indicators for upcoming blocks
 - Blocks can rest on the snake's tail
 - Score system based on block sizes
-- Game over on wall collision or self-collision
-- Spacebar to restart after game over
 
-## Requirements
+## Need Help?
 
-- Python 3.9+
-- Pygame 2.5.2
+If you have any issues:
+1. Make sure Python is installed correctly
+2. Try running `pip3 install pygame` if the first command doesn't work
+3. Open Terminal/Command Prompt in the game folder to run it
 
-## Installation
-
-1. Clone the repository:
-```bash
-git clone https://github.com/CharlieOz999/tetris-snake.git
-cd tetris-snake
-```
-
-2. Install dependencies:
-```bash
-pip install -r requirements.txt
-```
-
-## How to Play
-
-1. Run the game:
-```bash
-python tetris_snake.py
-```
-
-2. Controls:
-- Arrow keys to move the snake
-- Spacebar to restart after game over
-
-3. Gameplay:
-- Guide your snake to eat the falling colored blocks
-- Blocks turn to stone (gray) when they hit the bottom
-- Game ends if you hit a wall, stone block, or your own tail
-- Watch for the red warning indicators showing where blocks will fall
-
-## License
-
-MIT License
+Enjoy the game! 🐍🎮
