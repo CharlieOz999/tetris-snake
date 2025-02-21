@@ -2,219 +2,25 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Tetris Snake</title>
     <style>
-        body {
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background: #2c3e50;
-            font-family: Arial, sans-serif;
-            color: white;
-        }
-        #game-container {
-            text-align: center;
-        }
-        canvas {
-            border: 2px solid #34495e;
-            margin: 20px;
-            background: black;
-        }
-        .controls {
-            background: #34495e;
-            padding: 20px;
-            border-radius: 8px;
-            margin-top: 20px;
-        }
+        body { background: #2c3e50; color: white; font-family: Arial; }
+        canvas { background: black; }
     </style>
 </head>
 <body>
-    <div id="game-container">
-        <h1>Tetris Snake</h1>
-        <canvas id="gameCanvas" width="800" height="800"></canvas>
-        <div class="controls">
-            <h2>Controls</h2>
-            <p>Arrow keys - Move snake</p>
-            <p>Spacebar - Restart game</p>
-        </div>
-    </div>
+    <h1>Tetris Snake</h1>
+    <canvas id="game" width="400" height="400"></canvas>
     <script>
-        const canvas = document.getElementById('gameCanvas');
+        const canvas = document.getElementById('game');
         const ctx = canvas.getContext('2d');
-
-        const GRID_SIZE = 20;
-        const CELL_SIZE = canvas.width / GRID_SIZE;
-        const COLORS = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF'];
-
-        let snake = {
-            body: [{x: 10, y: 10}],
-            dx: 1,
-            dy: 0,
-            grow: false
-        };
-
-        let block = {
-            x: Math.floor(Math.random() * GRID_SIZE),
-            y: 0,
-            color: COLORS[Math.floor(Math.random() * COLORS.length)]
-        };
-
-        let score = 0;
-        let gameOver = false;
-
-        function drawSnake() {
-            ctx.fillStyle = '#00FF00';
-            snake.body.forEach(segment => {
-                ctx.fillRect(
-                    segment.x * CELL_SIZE + 1,
-                    segment.y * CELL_SIZE + 1,
-                    CELL_SIZE - 2,
-                    CELL_SIZE - 2
-                );
-            });
-        }
-
-        function drawBlock() {
-            ctx.fillStyle = block.color;
-            ctx.fillRect(
-                block.x * CELL_SIZE + 1,
-                block.y * CELL_SIZE + 1,
-                CELL_SIZE - 2,
-                CELL_SIZE - 2
-            );
-        }
-
-        function moveSnake() {
-            const head = snake.body[0];
-            const newHead = {
-                x: head.x + snake.dx,
-                y: head.y + snake.dy
-            };
-
-            // Check wall collision
-            if (newHead.x < 0 || newHead.x >= GRID_SIZE ||
-                newHead.y < 0 || newHead.y >= GRID_SIZE) {
-                gameOver = true;
-                return;
-            }
-
-            // Check self collision
-            if (snake.body.some(segment => segment.x === newHead.x && segment.y === newHead.y)) {
-                gameOver = true;
-                return;
-            }
-
-            snake.body.unshift(newHead);
-            if (!snake.grow) {
-                snake.body.pop();
-            }
-            snake.grow = false;
-        }
-
-        function moveBlock() {
-            block.y++;
-            if (block.y >= GRID_SIZE) {
-                resetBlock();
-            }
-        }
-
-        function resetBlock() {
-            block.x = Math.floor(Math.random() * GRID_SIZE);
-            block.y = 0;
-            block.color = COLORS[Math.floor(Math.random() * COLORS.length)];
-        }
-
-        function checkCollision() {
-            const head = snake.body[0];
-            if (head.x === block.x && head.y === block.y) {
-                snake.grow = true;
-                score++;
-                resetBlock();
-            }
-        }
-
-        function drawScore() {
-            ctx.fillStyle = 'white';
-            ctx.font = '24px Arial';
-            ctx.fillText(`Score: ${score}`, 10, 30);
-        }
-
-        function drawGameOver() {
-            ctx.fillStyle = 'white';
-            ctx.font = '48px Arial';
-            ctx.fillText('Game Over!', canvas.width/4, canvas.height/2);
-            ctx.fillText('Press SPACE', canvas.width/4, canvas.height/2 + 60);
-        }
-
-        function resetGame() {
-            snake = {
-                body: [{x: 10, y: 10}],
-                dx: 1,
-                dy: 0,
-                grow: false
-            };
-            resetBlock();
-            score = 0;
-            gameOver = false;
-        }
-
-        function gameLoop() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            if (!gameOver) {
-                moveSnake();
-                moveBlock();
-                checkCollision();
-            }
-
-            drawSnake();
-            drawBlock();
-            drawScore();
-
-            if (gameOver) {
-                drawGameOver();
-            }
-        }
-
-        document.addEventListener('keydown', (event) => {
-            if (!gameOver) {
-                switch (event.key) {
-                    case 'ArrowLeft':
-                        if (snake.dx !== 1) {
-                            snake.dx = -1;
-                            snake.dy = 0;
-                        }
-                        break;
-                    case 'ArrowRight':
-                        if (snake.dx !== -1) {
-                            snake.dx = 1;
-                            snake.dy = 0;
-                        }
-                        break;
-                    case 'ArrowUp':
-                        if (snake.dy !== 1) {
-                            snake.dx = 0;
-                            snake.dy = -1;
-                        }
-                        break;
-                    case 'ArrowDown':
-                        if (snake.dy !== -1) {
-                            snake.dx = 0;
-                            snake.dy = 1;
-                        }
-                        break;
-                }
-            }
-            if (event.code === 'Space' && gameOver) {
-                resetGame();
-            }
-        });
-
-        // Start the game
-        setInterval(gameLoop, 100);
+        
+        // Draw something to verify canvas works
+        ctx.fillStyle = 'green';
+        ctx.fillRect(100, 100, 200, 200);
+        ctx.fillStyle = 'white';
+        ctx.font = '20px Arial';
+        ctx.fillText('Game is working!', 120, 200);
     </script>
 </body>
 </html>
