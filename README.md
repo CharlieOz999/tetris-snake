@@ -22,7 +22,7 @@ A unique fusion of classic Snake and Tetris gameplay mechanics. Navigate your sn
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/[your-username]/tetris-snake.git
+git clone https://github.com/CharlieOz999/tetris-snake.git
 cd tetris-snake
 ```
 
