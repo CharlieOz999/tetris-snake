@@ -11,11 +11,12 @@ pygame.init()
 WINDOW_SIZE = 400
 GRID_SIZE = 20
 GRID_DIMENSION = WINDOW_SIZE // GRID_SIZE
-FPS = 10
+FPS = 15
 WARNING_TIME = 1.0
-BLOCK_FALL_RATE = 1  # Move every frame (was 3)
+BLOCK_FALL_RATE = 2
+SNAKE_MOVE_RATE = 1
 MAX_BLOCKS = 3
-NEW_BLOCK_CHANCE = 0.05
+NEW_BLOCK_CHANCE = 0.2
 
 # Colors
 BLACK = (0, 0, 0)
@@ -61,15 +62,36 @@ class TetrisBlock:
         return [(self.position[0] + dx, self.position[1] + dy) for dx, dy in self.shape]
 
     def can_move_down(self, stacked_blocks, snake_body):
-        for x, y in self.get_positions():
-            if y + 1 >= GRID_DIMENSION:
+        # Check if any part of the block would go out of bounds
+        for dx, dy in self.shape:
+            next_y = self.position[1] + dy + 1
+            if next_y >= GRID_DIMENSION:
                 return False
+            
+            # Check if would hit a stacked block
+            next_x = self.position[0] + dx
+            if 0 <= next_y < GRID_DIMENSION and 0 <= next_x < GRID_DIMENSION:
+                if stacked_blocks[next_y][next_x] is not None:
+                    return False
                 
-            if y + 1 >= 0 and stacked_blocks[y + 1][x] is not None:
-                return False
-                
-        next_positions = [(x, y + 1) for x, y in self.get_positions()]
+        # Check if block would hit snake
+        next_positions = [(self.position[0] + dx, self.position[1] + dy + 1) 
+                         for dx, dy in self.shape]
         return not any(pos in snake_body for pos in next_positions)
+
+    def will_hit_bottom(self):
+        # Check if any part of the block would hit bottom after moving
+        return any(self.position[1] + dy + 1 >= GRID_DIMENSION for dx, dy in self.shape)
+
+    def will_hit_stacked_blocks(self, stacked_blocks):
+        # Check if any part of the block would hit stacked blocks after moving
+        for dx, dy in self.shape:
+            next_y = self.position[1] + dy + 1
+            next_x = self.position[0] + dx
+            if 0 <= next_y < GRID_DIMENSION and 0 <= next_x < GRID_DIMENSION:
+                if stacked_blocks[next_y][next_x] is not None:
+                    return True
+        return False
 
 class Snake:
     def __init__(self):
@@ -148,24 +170,26 @@ class Game:
 
         self.frame_count += 1
 
-        if not self.snake.move():
-            self.game_over = True
-            return
+        # Move snake more frequently than blocks
+        if self.frame_count % SNAKE_MOVE_RATE == 0:
+            if not self.snake.move():
+                self.game_over = True
+                return
 
-        # Check collision with stacked blocks first
-        head_x, head_y = self.snake.body[0]
-        if self.stacked_blocks[head_y][head_x] is not None:
-            self.game_over = True
-            return
+            # Check collision with stacked blocks first
+            head_x, head_y = self.snake.body[0]
+            if 0 <= head_y < GRID_DIMENSION and 0 <= head_x < GRID_DIMENSION:
+                if self.stacked_blocks[head_y][head_x] is not None:
+                    self.game_over = True
+                    return
 
-        # Then check for collisions with any block
-        for block in self.blocks[:]:
-            if not block.is_stone and self.snake.check_collision(block):
-                self.score += len(block.shape) * 10
-                self.snake.grow = True
-                # Remove block immediately when eaten
-                self.blocks.remove(block)
-                continue
+            # Then check for collisions with any block
+            for block in self.blocks[:]:
+                if not block.is_stone and self.snake.check_collision(block):
+                    self.score += len(block.shape) * 10
+                    self.snake.grow = True
+                    self.blocks.remove(block)
+                    continue
 
         # Add new block if we're below maximum
         if len(self.blocks) < MAX_BLOCKS and random.random() < NEW_BLOCK_CHANCE:
@@ -181,78 +205,74 @@ class Game:
                     block.position[1] = 0
 
                 if block.is_falling and self.frame_count % BLOCK_FALL_RATE == 0:
-                    if block.can_move_down(self.stacked_blocks, self.snake.body):
-                        block.is_resting = False
+                    # Check if block will hit bottom
+                    if block.will_hit_bottom() or block.will_hit_stacked_blocks(self.stacked_blocks):
+                        # Turn to stone
+                        for dx, dy in block.shape:
+                            x = block.position[0] + dx
+                            y = block.position[1] + dy
+                            if 0 <= y < GRID_DIMENSION and 0 <= x < GRID_DIMENSION:
+                                self.stacked_blocks[y][x] = GRAY
+                        self.blocks.remove(block)
+                    elif not any((block.position[0] + dx, block.position[1] + dy + 1) in self.snake.body 
+                               for dx, dy in block.shape):
+                        # Only move down if not blocked by snake
                         block.position[1] += 1
-                    else:
-                        # Check if block is resting on snake
-                        block_positions = block.get_positions()
-                        touching_snake = False
-                        for x, y in block_positions:
-                            # Check position below each block part
-                            if (x, y + 1) in self.snake.body:
-                                touching_snake = True
-                                break
-                        
-                        if touching_snake:
-                            block.is_resting = True
-                        else:
-                            # Only turn to stone if at bottom or on other blocks
-                            block.is_stone = True
-                            for x, y in block_positions:
-                                if 0 <= y < GRID_DIMENSION and 0 <= x < GRID_DIMENSION:
-                                    self.stacked_blocks[y][x] = GRAY
-                            self.blocks.remove(block)
 
     def draw(self):
         self.screen.fill(BLACK)
 
-        for x in range(0, WINDOW_SIZE, GRID_SIZE):
-            pygame.draw.line(self.screen, WHITE, (x, 0), (x, WINDOW_SIZE))
-        for y in range(0, WINDOW_SIZE, GRID_SIZE):
-            pygame.draw.line(self.screen, WHITE, (0, y), (WINDOW_SIZE, y))
-
-        for block in self.blocks:
-            if block.should_show_warning():
-                warning_rect = pygame.Rect(
-                    block.next_position * GRID_SIZE,
-                    0,
-                    GRID_SIZE-1,
-                    GRID_SIZE-1
-                )
-                if int(time.time() * 2) % 2:
-                    pygame.draw.rect(self.screen, RED, warning_rect)
-
-        for segment in self.snake.body:
-            pygame.draw.rect(self.screen, GREEN,
-                           (segment[0]*GRID_SIZE, segment[1]*GRID_SIZE, GRID_SIZE-1, GRID_SIZE-1))
-
-        for block in self.blocks:
-            if not block.is_stone and block.is_falling:
-                for x, y in block.get_positions():
-                    if 0 <= y < GRID_DIMENSION and 0 <= x < GRID_DIMENSION:
-                        pygame.draw.rect(self.screen, block.color,
-                                       (x*GRID_SIZE, y*GRID_SIZE, GRID_SIZE-1, GRID_SIZE-1))
-
+        # Draw stacked blocks first
         for y in range(GRID_DIMENSION):
             for x in range(GRID_DIMENSION):
-                if self.stacked_blocks[y][x]:
+                if self.stacked_blocks[y][x] is not None:
                     pygame.draw.rect(self.screen, self.stacked_blocks[y][x],
-                                   (x*GRID_SIZE, y*GRID_SIZE, GRID_SIZE-1, GRID_SIZE-1))
+                                   (x * GRID_SIZE,
+                                    y * GRID_SIZE,
+                                    GRID_SIZE-2, GRID_SIZE-2))
 
+        # Draw snake
+        for segment in self.snake.body:
+            pygame.draw.rect(self.screen, GREEN,
+                           (segment[0] * GRID_SIZE,
+                            segment[1] * GRID_SIZE,
+                            GRID_SIZE-2, GRID_SIZE-2))
+
+        # Draw falling blocks
+        for block in self.blocks:
+            # Draw warning indicator
+            if block.should_show_warning():
+                pygame.draw.rect(self.screen, GRAY,
+                               (block.next_position * GRID_SIZE,
+                                0,
+                                GRID_SIZE-2, GRID_SIZE-2))
+
+            # Draw actual block
+            if block.is_falling:
+                for dx, dy in block.shape:
+                    x = (block.position[0] + dx) * GRID_SIZE
+                    y = (block.position[1] + dy) * GRID_SIZE
+                    if y >= 0:  # Only draw if visible
+                        pygame.draw.rect(self.screen, block.color,
+                                       (x, y, GRID_SIZE-2, GRID_SIZE-2))
+
+        # Draw score
         font = pygame.font.Font(None, 36)
         score_text = font.render(f'Score: {self.score}', True, WHITE)
         self.screen.blit(score_text, (10, 10))
 
         if self.game_over:
-            game_over_text = font.render('Game Over! Press SPACE', True, WHITE)
-            self.screen.blit(game_over_text, (WINDOW_SIZE//2 - 150, WINDOW_SIZE//2))
+            font = pygame.font.Font(None, 74)
+            text = font.render('Game Over!', True, WHITE)
+            self.screen.blit(text, (WINDOW_SIZE//4, WINDOW_SIZE//2))
             
+            # Draw restart button
             button_rect = pygame.Rect(WINDOW_SIZE//2 - 60, WINDOW_SIZE//2 + 50, 120, 40)
-            pygame.draw.rect(self.screen, WHITE, button_rect)
-            restart_text = font.render('Restart', True, BLACK)
-            text_rect = restart_text.get_rect(center=button_rect.center)
-            self.screen.blit(restart_text, text_rect)
+            pygame.draw.rect(self.screen, GREEN, button_rect)
+            font = pygame.font.Font(None, 36)
+            text = font.render('Restart', True, BLACK)
+            text_rect = text.get_rect(center=button_rect.center)
+            self.screen.blit(text, text_rect)
 
         pygame.display.flip()
 
